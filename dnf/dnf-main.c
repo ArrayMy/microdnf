@@ -25,6 +25,8 @@
 #include <libpeas/peas.h>
 #include <libdnf/libdnf.h>
 #include "dnf-command.h"
+#include <dirent.h>
+#include <errno.h>
 
 static gboolean opt_yes = TRUE;
 static gboolean opt_nodocs = FALSE;
@@ -88,9 +90,21 @@ static const GOptionEntry global_opts[] = {
 static DnfContext *
 context_new (void)
 {
+  DIR* dir = opendir("/etc/microdnf/");
   DnfContext *ctx = dnf_context_new ();
-
-  dnf_context_set_repo_dir (ctx, "/etc/yum.repos.d/");
+  if (dir)
+  {
+    dnf_context_set_repo_dir (ctx, "/etc/microdnf/");
+    closedir(dir);
+  }
+  else if (ENOENT == errno)
+  {
+    dnf_context_set_repo_dir (ctx, "/etc/yum.repos.d/");
+  }
+  else
+  {
+    dnf_context_set_repo_dir (ctx, "/etc/yum.repos.d/");
+  }
 #define CACHEDIR "/var/cache/yum"
   dnf_context_set_cache_dir (ctx, CACHEDIR"/metadata");
   dnf_context_set_solv_dir (ctx, CACHEDIR"/solv");
